@@ -1,7 +1,16 @@
 class ToDoApplication {
   constructor() {}
 
-  execute() {}
+  execute() {
+    let taskManager = new TaskManager(new Store(), new Render());
+    taskManager.createTask('go to school');
+    taskManager.createTask('go to shop');
+    taskManager.createTask('go to gym');
+    let testId = taskManager._store._store[0].getId();
+    taskManager.removeTask(testId);// удалили 'go to school'
+
+
+  }
 }
 
 class Task {
@@ -16,11 +25,11 @@ class Task {
   }
 
   makeid(length = 10) {
-    var result = "";
-    var characters =
+    let result = "";
+    let characters =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    var charactersLength = characters.length;
-    for (var i = 0; i < length; i++) {
+    let charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
@@ -36,10 +45,20 @@ class Task {
 }
 
 class TaskManager {
-  constructor() {}
+  constructor(store, render) {
+    this._store = store;
+    this._render = render;
+  }
 
   createTask(title) {
-    return new Task(title);
+    let newTask = new Task(title);
+    this._store.createTask(newTask);
+    this._render.rederTask(newTask);
+  }
+
+  removeTask(id){
+    this._store.removeTask(id);
+    this._render.dispose(this._store.getTasks());
   }
 }
 
@@ -83,6 +102,21 @@ class Store {
 
 class Render {
   constructor() {}
+
+  rederTask(task) {
+    console.log(task);
+  }
+
+  updateTask(id) {
+    //????????
+  }
+
+  dispose(tasks) {
+    console.clear();
+    for (let i = 0; i < tasks.length; i++) {
+      console.log(tasks[i]);
+    }
+  }
 }
 
 let app = new ToDoApplication();
