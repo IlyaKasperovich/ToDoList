@@ -30,15 +30,17 @@ class ToDo {
   }
 
   init() {
-    let tasks = this._taskManager.getTasks();
-    tasks.forEach(task => {
-      this._render.renderTask(task);
-    });
+    let tasksPromise = this._taskManager.getTasks();
+    tasksPromise.then(tasks =>
+      tasks.forEach(task => {
+        this._render.renderTask(task);
+      })
+    );
   }
 
   addTask(title) {
-    let task = this._taskManager.createTask(title);
-    this._render.renderTask(task);
+    let taskPromise = this._taskManager.createTask(title);
+    taskPromise.then(task => this._render.renderTask(task));
   }
 }
 
@@ -72,6 +74,15 @@ class Task {
 
   touggle() {
     this._completed = !this._completed;
+  }
+
+  copy(){
+    return{
+      id : this.id,
+      title: this.title,
+      completed: this.completed,
+      creationMoment: this.creationMoment
+    }
   }
 
   static toJSON(task) {
@@ -108,8 +119,7 @@ class TaskManager {
       .toString(36)
       .substring(2, 16);
     let task = new Task(id, title);
-    this._store.saveTask(task);
-    return task;
+    return this._store.saveTask(task);
   }
 
   getTasks() {
@@ -156,7 +166,7 @@ class StoreLS extends AbstractStore {
       throw new Error("impossible get task with id = ${id}", error.message);
     }
 
-    return task;
+    return Promise.resolve(task);
   }
 
   getTasks() {
@@ -174,21 +184,14 @@ class StoreLS extends AbstractStore {
         tasks.push(task);
       }
     }
-    return tasks;
+    return Promise.resolve(tasks);
   }
 
   saveTask(task) {
     let key = this._prefix + task.id;
     const json = Task.toJSON(task);
     localStorage.setItem(key, json);
-
-    let taskCopy = null;
-    try {
-      taskCopy = Task.fromJSON(localStorage.getItem(key));
-    } catch (error) {
-      throw new Error("impossible get task with id = ${id}", error.message);
-    }
-    return taskCopy;
+    return Promise.resolve(task.copy());
   }
 }
 
@@ -199,28 +202,23 @@ class Store extends AbstractStore {
   }
 
   saveTask(task) {
+    let copyTask = task.copy();
     this._storage.push(task);
-    return task;
+    return Promise.resolve(copyTask);
   }
 
   getTasks() {
-    return this._storage.map(task => {
-      let taskCopy = null;
-      try {
-        taskCopy = Task.fromJSON(Task.toJSON(task));
-      } catch (error) {
-        throw new Error("impossible get task with id = ${id}", error.message);
-      }
-      return taskCopy;
-    });
-  }
-
-  removeTask(id) {
-    for (let i = 0; i < this._storage.length; i++) {
-      if (this._storage[i].getId() === id) {
-        this._storage.splice(i, 1);
-      }
-    }
+    return Promise.resolve(
+      this._storage.map(task => {
+        let taskCopy = null;
+        try {
+          taskCopy = task.copy();
+        } catch (error) {
+          throw new Error("impossible get task with id = ${id}", error.message);
+        }
+        return taskCopy;
+      })
+    );
   }
 
   getTask(id) {
@@ -232,20 +230,12 @@ class Store extends AbstractStore {
 
     let taskCopy = null;
     try {
-      taskCopy = Task.fromJSON(Task.toJSON(task));
+      taskCopy = task.copy();
     } catch (error) {
       throw new Error("impossible get task with id = ${id}", error.message);
     }
 
-    return taskCopy;
-  }
-
-  updateTask(task) {
-    for (let i = 0; i < this._storage.length; i++) {
-      if (this._storage[i].getId() === task.getId()) {
-        this._storage.splice(i, 1, task);
-      }
-    }
+    return Promise.resolve(taskCopy);
   }
 }
 
