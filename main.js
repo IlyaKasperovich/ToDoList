@@ -2,7 +2,7 @@ class ToDoApplication {
   constructor() {}
 
   execute() {
-    const store = new Store();
+    const store = new StoreJS();
     const render = new Render();
     const taskManager = new TaskManager(store);
     const toDo = new ToDo(taskManager, render);
@@ -23,7 +23,7 @@ class ToDoApplication {
     });
 
     deleteBtnReg.addEventListener("click", () => {
-      toDo.deleteTask(idInputRef.value);
+      toDo.toggleTask(idInputRef.value);
     });
 
     toDo.init();
@@ -45,7 +45,7 @@ class ToDo {
     );
   }
 
-  addTask(title) {
+  async addTask(title) {
     let taskPromise = this._taskManager.createTask(title);
     taskPromise.then(task => this._render.renderTask(task));
   }
@@ -162,6 +162,58 @@ class AbstractStore {
 
   saveTask(task) {
     throw new Error("Not implemented");
+  }
+}
+
+class StoreJS extends AbstractStore {
+  constructor() {
+    super();
+    this._headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Method": "GET, POST, PUT, DELETE, PATCH"
+    };
+  }
+
+  async getTask(id) {
+    let response = await fetch(`http://localhost:3000/tasks/${id}`);
+    return await response.json();
+  }
+
+  async getTasks() {
+    let response = await fetch("http://localhost:3000/tasks");
+    return await response.json();
+  }
+
+  async saveTask(task, headers = this._headers) {
+    let response = await fetch("http://localhost:3000/tasks", {
+      headers,
+      method: "POST",
+      body: Task.toJSON(task)
+    });
+    return await response.json();
+  }
+
+  async deleteTask(id, headers = this._headers) {
+    let response = await fetch(`http://localhost:3000/tasks/${id}`, {
+      headers,
+      method: "DELETE"
+    });
+    return await response.json();
+  }
+
+  async toggleTask(id, headers = this._headers){
+    let task = await this.getTask(id);
+    task.completed = !task.completed;
+    const response = await fetch(
+      `http://localhost:3000/tasks/${id}`,
+      {
+        headers,
+        method: 'PUT',
+        body: Task.toJSON(task)
+      }
+    );  
+    return await response.json();
   }
 }
 
