@@ -2,7 +2,7 @@ class ToDoApplication {
   constructor() {}
 
   execute() {
-    const store = new StoreLS();
+    const store = new Store();
     const render = new Render();
     const taskManager = new TaskManager(store);
     const toDo = new ToDo(taskManager, render);
@@ -11,12 +11,19 @@ class ToDoApplication {
     let createTaskBtnRef = document.getElementById("create-btn");
     let debugBtnRef = document.getElementById("debug-btn");
 
+    let idInputRef = document.getElementById("id-input");
+    let deleteBtnReg = document.getElementById("delete-btn");
+
     createTaskBtnRef.addEventListener("click", () => {
       toDo.addTask(titleInputRef.value);
     });
 
     debugBtnRef.addEventListener("click", () => {
       toDo.init();
+    });
+
+    deleteBtnReg.addEventListener("click", () => {
+      toDo.deleteTask(idInputRef.value);
     });
 
     toDo.init();
@@ -41,6 +48,14 @@ class ToDo {
   addTask(title) {
     let taskPromise = this._taskManager.createTask(title);
     taskPromise.then(task => this._render.renderTask(task));
+  }
+
+  deleteTask(id) {
+    let promiseTask = this._taskManager.deleteTask(id);
+  }
+
+  toggleTask(id) {
+    let promiseTask = this._taskManager.toggleTask(id);
   }
 }
 
@@ -72,17 +87,18 @@ class Task {
     return this._completed;
   }
 
-  touggle() {
+  toggle() {
     this._completed = !this._completed;
+    return this;
   }
 
-  copy(){
-    return{
-      id : this.id,
+  copy() {
+    return {
+      id: this.id,
       title: this.title,
       completed: this.completed,
       creationMoment: this.creationMoment
-    }
+    };
   }
 
   static toJSON(task) {
@@ -126,9 +142,12 @@ class TaskManager {
     return this._store.getTasks();
   }
 
-  removeTask(id) {
-    this._store.removeTask(id);
-    this._render.dispose(this._store.getTasks());
+  deleteTask(id) {
+    return this._store.deleteTask(id);
+  }
+
+  toggleTask(id) {
+    return this._store.toggleTask(id);
   }
 }
 
@@ -193,6 +212,20 @@ class StoreLS extends AbstractStore {
     localStorage.setItem(key, json);
     return Promise.resolve(task.copy());
   }
+
+  deleteTask(id) {
+    let key = this._prefix + id;
+    localStorage.removeItem(key);
+    return Promise.resolve({});
+  }
+
+  async toggleTask(id) {
+    let key = this._prefix + id;
+    let taskPromise = this.getTask(id);
+    let task = await taskPromise.then();
+    localStorage.setItem(key, Task.toJSON(task.toggle()));
+    return Promise.resolve(task);
+  }
 }
 
 class Store extends AbstractStore {
@@ -236,6 +269,24 @@ class Store extends AbstractStore {
     }
 
     return Promise.resolve(taskCopy);
+  }
+
+  deleteTask(id) {
+    for (let index = 0; index < this._storage.length; index++) {
+      if (this._storage[index].id === id) {
+        this._storage.splice(index, 1);
+      }
+    }
+    return Promise.resolve({});
+  }
+
+  toggleTask(id) {
+    for (let index = 0; index < this._storage.length; index++) {
+      if (this._storage[index].id === id) {
+        this._storage[index].toggle();
+        return Promise.resolve(this._storage[index].copy());
+      }
+    }
   }
 }
 
