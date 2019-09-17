@@ -23,7 +23,7 @@ class ToDoApplication {
     });
 
     deleteBtnReg.addEventListener("click", () => {
-      toDo.toggleTask(idInputRef.value);
+      toDo.deleteTask(idInputRef.value);
     });
 
     toDo.init();
@@ -56,6 +56,55 @@ class ToDo {
 
   toggleTask(id) {
     let promiseTask = this._taskManager.toggleTask(id);
+  }
+}
+
+class AbstractLogger {
+  constructor(config) {
+    this._logLevel = config.level;
+  }
+
+  log(message) {
+    throw new Error("Not implemented");
+  }
+}
+
+class Logger extends AbstractLogger {
+  constructor(config) {
+    super(config);
+  }
+
+  log(message) {
+    switch (this._logLevel) {
+      case "debug":
+        console.log(message);
+        break;
+
+      case "production":
+        break;
+    }
+  }
+}
+
+class LoggerWithHistory extends AbstractLogger {
+  constructor(config) {
+    super(config);
+    this._history = [];
+  }
+
+  get history() {
+    return this._history;
+  }
+
+  log(message) {
+    switch (this._logLevel) {
+      case "debug":
+        this._history.push(`${new Date().toISOString()}:${message}`);
+        break;
+
+      case "production":
+        break;
+    }
   }
 }
 
@@ -115,7 +164,7 @@ class Task {
     try {
       obj = JSON.parse(json);
     } catch (error) {
-      throw new Error("invalid json: ${json}", error.message);
+      throw new Error(`invalid json: ${json}`, error.message);
     }
 
     return new Task(obj.id, obj.title, obj.completed, obj.creationMoment);
@@ -165,6 +214,39 @@ class AbstractStore {
   }
 }
 
+class LoggerableTaskManager extends TaskManager {
+  constructor(store, logger) {
+    super(...arguments);
+    this._logger = logger;
+  }
+
+  async createTask(title) {
+    let result = await super.createTask(title);
+    this._logger.log(`created ${title}`);
+    return result;
+  }
+
+  getTasks() {
+    return super.getTasks();
+  }
+
+  async deleteTask(id) {
+    let result = await super.deleteTask(id);
+    this._logger.log(`deleted task ${id}`);
+    return result;
+  }
+
+  async toggleTask(id) {
+    let result = await super.toggleTask(id);
+    this._logger.log(`toggled task ${id}`);
+    return result;
+  }
+
+  getLogs() {
+    return this._logger.history;
+  }
+}
+
 class StoreJS extends AbstractStore {
   constructor() {
     super();
@@ -177,7 +259,8 @@ class StoreJS extends AbstractStore {
 
   async getTask(id) {
     let response = await fetch(`http://localhost:3000/tasks/${id}`);
-    return await response.json();
+    let task = Task.fromJSON(JSON.stringify(await response.json()));
+    return Promise.resolve(task);
   }
 
   async getTasks() {
@@ -202,17 +285,14 @@ class StoreJS extends AbstractStore {
     return await response.json();
   }
 
-  async toggleTask(id, headers = this._headers){
+  async toggleTask(id, headers = this._headers) {
     let task = await this.getTask(id);
-    task.completed = !task.completed;
-    const response = await fetch(
-      `http://localhost:3000/tasks/${id}`,
-      {
-        headers,
-        method: 'PUT',
-        body: Task.toJSON(task)
-      }
-    );  
+    task.toggle();
+    const response = await fetch(`http://localhost:3000/tasks/${id}`, {
+      headers,
+      method: "PUT",
+      body: Task.toJSON(task)
+    });
     return await response.json();
   }
 }
@@ -227,14 +307,14 @@ class StoreLS extends AbstractStore {
     let key = this._prefix + id;
     const taskJson = localStorage.getItem(key);
     if (!taskJson) {
-      throw new Error("There is no task with id = ${id}");
+      throw new Error(`There is no task with id = ${id}`);
     }
 
     let task = null;
     try {
       task = Task.fromJSON(taskJson);
     } catch (error) {
-      throw new Error("impossible get task with id = ${id}", error.message);
+      throw new Error(`impossible get task with id = ${id}`, error.message);
     }
 
     return Promise.resolve(task);
@@ -250,7 +330,7 @@ class StoreLS extends AbstractStore {
         try {
           task = Task.fromJSON(localStorage.getItem(key));
         } catch (error) {
-          throw new Error("impossible get task with id = ${id}", error.message);
+          throw new Error(`impossible get task with id = ${id}`, error.message);
         }
         tasks.push(task);
       }
@@ -299,7 +379,7 @@ class Store extends AbstractStore {
         try {
           taskCopy = task.copy();
         } catch (error) {
-          throw new Error("impossible get task with id = ${id}", error.message);
+          throw new Error(`impossible get task with id = ${id}`, error.message);
         }
         return taskCopy;
       })
@@ -310,14 +390,14 @@ class Store extends AbstractStore {
     const task = this._storage.find(task => task.id === id);
 
     if (!task) {
-      throw new Error("There is no task with id = ${id}");
+      throw new Error(`There is no task with id = ${id}`);
     }
 
     let taskCopy = null;
     try {
       taskCopy = task.copy();
     } catch (error) {
-      throw new Error("impossible get task with id = ${id}", error.message);
+      throw new Error(`impossible get task with id = ${id}`, error.message);
     }
 
     return Promise.resolve(taskCopy);
