@@ -1,23 +1,4 @@
 {
-  "tasks": [
-    {
-      "id": "0z23pf6ezf1n",
-      "title": "2",
-      "completed": true,
-      "creationMoment": 1568731887373
-    },
-    {
-      "id": "n6tis5sxc0c",
-      "title": "qweqwe",
-      "completed": false,
-      "creationMoment": 1568734773129
-    },
-    {
-      "id": "2gbp7b7umst",
-      "title": "qweqweqwe",
-      "completed": false,
-      "creationMoment": 1568734776081
-    }
-  ],
+  "tasks": [],
   "logs": []
 }

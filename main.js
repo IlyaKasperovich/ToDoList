@@ -4,7 +4,10 @@ class ToDoApplication {
   execute() {
     const store = new StoreJS();
     const render = new Render();
-    const taskManager = new TaskManager(store);
+    const taskManager = new LoggerableTaskManager(
+      store,
+      new LoggerWithHistory({ level: "debug" })
+    );
     const toDo = new ToDo(taskManager, render);
 
     let titleInputRef = document.getElementById("title-input");
@@ -89,18 +92,44 @@ class Logger extends AbstractLogger {
 class LoggerWithHistory extends AbstractLogger {
   constructor(config) {
     super(config);
-    this._history = [];
+    this._id = 0;
+    this._headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Method": "GET, POST, PUT, DELETE, PATCH"
+    };
   }
 
-  get history() {
-    return this._history;
+  async getLogs() {
+    let response = await fetch("http://localhost:3000/logs");
+    return await response.json();
   }
 
-  log(message) {
+  checkId(id) {
+    if (id === 99) {
+      this._id = 0;
+    } else {
+      this._id = id;
+    }
+  }
+
+  async log(message, headers = this._headers, logId = this._id) {
     switch (this._logLevel) {
-      case "debug":
-        this._history.push(`${new Date().toISOString()}:${message}`);
-        break;
+      case "debug": {
+        let logObj = {
+          id: logId,
+          event: message,
+          time : new Date()
+        };
+        let response = await fetch("http://localhost:3000/logs", {
+          headers,
+          method: "POST",
+          body: JSON.stringify(logObj)
+        });
+        debugger;
+        if (this._id === 99) this._id = 0;
+        else this._id++;
+      }
 
       case "production":
         break;
@@ -222,7 +251,7 @@ class LoggerableTaskManager extends TaskManager {
 
   async createTask(title) {
     let result = await super.createTask(title);
-    this._logger.log(`created ${title}`);
+    this._logger.log(`created task ${title}`);
     return result;
   }
 
@@ -232,13 +261,13 @@ class LoggerableTaskManager extends TaskManager {
 
   async deleteTask(id) {
     let result = await super.deleteTask(id);
-    this._logger.log(`deleted task ${id}`);
+    this._logger.log(`deleted task id: ${id}`);
     return result;
   }
 
   async toggleTask(id) {
     let result = await super.toggleTask(id);
-    this._logger.log(`toggled task ${id}`);
+    this._logger.log(`toggled task id: ${id}`);
     return result;
   }
 
