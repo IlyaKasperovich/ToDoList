@@ -1,0 +1,26 @@
+{
+  "name": "todo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js --watch",
+    "runFakeDB": "json-server --watch db.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IlyaKasperovich/ToDoList.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IlyaKasperovich/ToDoList/issues"
+  },
+  "homepage": "https://github.com/IlyaKasperovich/ToDoList#readme",
+  "devDependencies": {
+    "json-server": "^0.15.1",
+    "lite-server": "^2.5.4",
+    "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9"
+  }
+}
