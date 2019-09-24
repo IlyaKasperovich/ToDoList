@@ -13,7 +13,7 @@ export class TaskManager {
   createTask(title) {
     let id = Math.random()
       .toString(36)
-      .substring(2, 16);
+      .substring(2, 9);
     let task = new Task(id, title);
     return this._store.saveTask(task);
   }
