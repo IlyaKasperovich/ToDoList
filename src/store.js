@@ -1,7 +1,5 @@
 import { Task } from "./task";
 
-
-
 export class AbstractStore {
   getTask(id) {
     throw new Error("Not implemented");

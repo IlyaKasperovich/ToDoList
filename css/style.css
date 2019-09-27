@@ -164,7 +164,7 @@ body {
 }
 
 .todo-app__input {
-  width: 85%;
+  width: 80%;
   height: 30px;
   color: white;
   font-size: 20px;
@@ -173,6 +173,7 @@ body {
 }
 
 .button {
+  background-color: white;
   color: black;
   padding: 8px 16px;
   border-radius: 10px;
@@ -180,6 +181,10 @@ body {
   font-weight: 600;
   float: right;
   margin: 4px;
+}
+
+.button:hover {
+  background-color: rgb(199, 194, 206);
 }
 
 .task {

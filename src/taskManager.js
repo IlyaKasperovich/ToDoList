@@ -1,7 +1,6 @@
 import { AbstractStore } from "./store";
 import { Task } from "./task";
 
-
 export class TaskManager {
   constructor(store) {
     if (!(store instanceof AbstractStore)) {
@@ -11,9 +10,11 @@ export class TaskManager {
   }
 
   createTask(title) {
-    let id = Math.random()
-      .toString(36)
-      .substring(2, 9);
+    let id =
+      "task" +
+      Math.random()
+        .toString(36)
+        .substring(2, 9);
     let task = new Task(id, title);
     return this._store.saveTask(task);
   }
